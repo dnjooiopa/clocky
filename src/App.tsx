@@ -1,120 +1,95 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useEffect, useState } from 'react'
+import { useNow } from './hooks/useNow'
+import { useActivities, activeActivityId } from './hooks/useActivities'
+import { periodForDate, minutesToLabel } from './utils/time'
+import Background from './components/Background'
+import Clock from './components/Clock'
+import InfoPanel from './components/InfoPanel'
+import ActivityPanel from './components/ActivityPanel'
+import Modal from './components/Modal'
 import './App.css'
 
+/** Where the day-progress ring begins (degrees clockwise from 3 o'clock; -90 = top). */
+const PROGRESS_START_ANGLE = -90
+
+const SHOW_PERCENT_KEY = 'clocky.showPercent.v1'
+
 function App() {
-  const [count, setCount] = useState(0)
+  const now = useNow(1000)
+  const period = periodForDate(now)
+  const nowMinute = now.getHours() * 60 + now.getMinutes()
+  const { activities, addActivity, updateActivity, deleteActivity } =
+    useActivities()
+
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [showPercent, setShowPercent] = useState(
+    () => localStorage.getItem(SHOW_PERCENT_KEY) !== 'false',
+  )
+
+  useEffect(() => {
+    localStorage.setItem(SHOW_PERCENT_KEY, String(showPercent))
+  }, [showPercent])
+
+  const activeId = activeActivityId(activities, nowMinute)
+  const current = activities.find((a) => a.id === activeId)
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      <Background />
 
-      <div className="ticks"></div>
+      <main className="app">
+        <section className="hero">
+          <Clock
+            now={now}
+            period={period}
+            progressStartAngle={PROGRESS_START_ANGLE}
+            showPercent={showPercent}
+            onTogglePercent={() => setShowPercent((v) => !v)}
+            activities={activities}
+            activeId={activeId}
+            onActivityClick={() => setScheduleOpen(true)}
+          />
+          <InfoPanel now={now} period={period} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          <button
+            className="schedule-btn glass"
+            onClick={() => setScheduleOpen(true)}
+          >
+            {current ? (
+              <>
+                <span
+                  className="schedule-btn-dot"
+                  style={{ background: current.color }}
+                />
+                <span className="schedule-btn-now">Now</span>
+                <span className="schedule-btn-title">{current.title}</span>
+                <span className="schedule-btn-time">
+                  {minutesToLabel(current.startMinute)}
+                </span>
+              </>
+            ) : (
+              <span className="schedule-btn-title">View schedule</span>
+            )}
+            <span className="schedule-btn-caret" aria-hidden="true">
+              ⌃
+            </span>
+          </button>
+        </section>
+      </main>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      <Modal
+        open={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        label="Today's schedule"
+      >
+        <ActivityPanel
+          activities={activities}
+          nowMinute={nowMinute}
+          onAdd={addActivity}
+          onUpdate={updateActivity}
+          onDelete={deleteActivity}
+        />
+      </Modal>
     </>
   )
 }

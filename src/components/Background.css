@@ -1,0 +1,81 @@
+.background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      120% 90% at 50% -10%,
+      #161b33 0%,
+      #0d1124 45%,
+      #080a16 100%
+    );
+}
+
+/* Soft ambient color glows */
+.glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+}
+.glow-a {
+  width: 46vmax;
+  height: 46vmax;
+  top: -12vmax;
+  left: -8vmax;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.45), transparent 70%);
+  animation: glow-float-a 22s ease-in-out infinite alternate;
+}
+.glow-b {
+  width: 40vmax;
+  height: 40vmax;
+  bottom: -14vmax;
+  right: -6vmax;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.4), transparent 70%);
+  animation: glow-float-b 26s ease-in-out infinite alternate;
+}
+@keyframes glow-float-a {
+  to {
+    transform: translate(6vmax, 5vmax) scale(1.1);
+  }
+}
+@keyframes glow-float-b {
+  to {
+    transform: translate(-5vmax, -4vmax) scale(1.12);
+  }
+}
+
+/* Layers */
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Floating dust motes */
+.particle {
+  position: absolute;
+  bottom: -10px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation-name: floatUp;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.6;
+  }
+  88% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-105vh) translateX(30px);
+    opacity: 0;
+  }
+}

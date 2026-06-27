@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-- `npm run dev` — start the Vite dev server (HMR) at http://localhost:5173
-- `npm run build` — type-check (`tsc -b`) then production build; run this to verify changes compile
-- `npm run lint` — ESLint over the repo
-- `npm run preview` — serve the production build
+- `pnpm dev` — start the Vite dev server (HMR) at http://localhost:5173
+- `pnpm build` — type-check (`tsc -b`) then production build; run this to verify changes compile
+- `pnpm lint` — ESLint over the repo
+- `pnpm preview` — serve the production build
 
 There is no test runner configured in this project.
 
@@ -16,16 +16,16 @@ There is no test runner configured in this project.
 The app is purely visual/time-driven, so verify with a headless screenshot rather than tests:
 
 ```bash
-(npm run dev > /tmp/dev.log 2>&1 &) && sleep 3
+(pnpm dev > /tmp/dev.log 2>&1 &) && sleep 3
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 "$CHROME" --headless --disable-gpu --hide-scrollbars --window-size=1440,900 \
   --screenshot=/tmp/shot.png --virtual-time-budget=3500 "http://localhost:5173/"
 pkill -f vite
 ```
 
-To screenshot a state behind interaction (e.g. the schedule modal, or the
-hidden-percentage variant), temporarily flip the relevant `useState` initial
-value in `App.tsx`, screenshot, then revert.
+To screenshot a state behind interaction (e.g. the schedule modal, or
+pomodoro mode), temporarily flip the relevant `useState` initial value in
+`App.tsx` (`scheduleOpen`, or `mode` to `'pomodoro'`), screenshot, then revert.
 
 ## Architecture
 
@@ -34,6 +34,10 @@ dashboard. No router, no backend; all state lives in the browser and persists to
 LocalStorage. The **React Compiler is enabled** (`babel-plugin-react-compiler`
 via `vite.config.ts`), so avoid manual `useMemo`/`useCallback` micro-optimizations
 unless there's a measured reason.
+
+The clock has two **modes** (`ClockMode` in `src/types.ts`): `activity` (the
+daily schedule face) and `pomodoro` (a 25/5 focus timer). Clicking the clock
+center toggles between them; the choice persists to LocalStorage.
 
 ### Data flow
 
@@ -46,11 +50,17 @@ unless there's a measured reason.
   run). The exported `activeActivityId(sorted, nowMinute)` decides which
   activity is "current": the most recent one started at/before now, wrapping to
   the last activity overnight.
-- The show/hide-percentage preference is its own LocalStorage value
-  (`clocky.showPercent.v1`) held in `App.tsx`.
+- `usePomodoro()` (`src/hooks/usePomodoro.ts`) owns the pomodoro timer state.
+  It runs independently of the visible mode and auto-advances
+  focus → break → focus (`FOCUS_SECONDS`/`BREAK_SECONDS` = 25/5 min). Time is
+  tracked against an absolute `deadline` (epoch ms), with the visible
+  `remaining` derived each tick, so it stays accurate under interval drift /
+  tab throttling. Exposes `toggle`/`reset`/`skip`.
+- The active `mode` (`activity` | `pomodoro`) is held in `App.tsx` and persists
+  to LocalStorage (`clocky.mode.v1`).
 
-Components are presentational and receive `now`/`period`/activities + callbacks
-as props; they do not read storage or the clock themselves.
+Components are presentational and receive `now`/`period`/activities/pomodoro +
+callbacks as props; they do not read storage or the clock themselves.
 
 ### Time model — read `src/utils/time.ts` first
 
@@ -67,18 +77,28 @@ must not be confused:
    (e.g. 06:00 and 18:00) overlap on the same spot. Do not "fix" this to align
    with the progress ring.
 
-`periodForDate` maps the hour to a `Period` (`dawn`/`morning`/`afternoon`/
-`evening`/`night`); `night` wraps across midnight. The period currently drives
-only text (greeting, label) — the background is a static dark theme and ignores
-it.
+`periodForDate` maps the hour to a `PeriodInfo` (`{ key, label, start, end }`
+from the `PERIODS` table) — `key` is one of `dawn`/`morning`/`afternoon`/
+`evening`/`night`, and `night` wraps across midnight. The period currently
+drives only text (greeting, label) — the background reacts to `mode`, not
+period. Display helpers also live here: `greetingForDate`, `formatTime`,
+`formatDate`, and `formatDuration` (seconds → `m:ss`, used by the pomodoro
+readout).
 
 ### Component responsibilities
 
-- `Clock.tsx` — SVG dial: day-progress ring, hour ticks, activity markers, and a
-  clickable center button that toggles the percentage. Geometry uses
+- `Clock.tsx` — SVG dial. In `activity` mode it draws the day-progress ring,
+  hour ticks, and activity markers; in `pomodoro` mode the same ring shows the
+  current phase's countdown (focus/break gradients) with a center readout. The
+  clickable center button toggles `mode` (`onToggleMode`). Geometry uses
   `x = 100 + R·sin(θ)`, `y = 100 - R·cos(θ)` with θ=0 at top, clockwise.
+- `InfoPanel.tsx` — greeting + live time + date, derived from `now` via the
+  `time.ts` formatters.
+- `PomodoroControls.tsx` — Start/Pause, Reset, Skip buttons shown below the
+  clock in `pomodoro` mode (the schedule button replaces it in `activity` mode).
 - `Background.tsx` — static dark gradient with ambient glows and floating
-  particles (deterministic `seeded()` layout so it's stable across renders).
+  particles (deterministic `seeded()` layout so it's stable across renders);
+  takes a `mode` prop and adds a `background--pomodoro` variant.
 - `ActivityPanel.tsx` + `ActivityForm.tsx` — schedule list and add/edit form;
   rendered inside `Modal.tsx`, not as a standalone panel. `Modal.tsx` is a
   generic overlay (backdrop-click + Escape to close).

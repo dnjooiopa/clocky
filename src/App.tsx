@@ -49,7 +49,7 @@ function App() {
             activeId={activeId}
             onActivityClick={() => setScheduleOpen(true)}
           />
-          <InfoPanel now={now} period={period} />
+          <InfoPanel now={now} />
 
           <button
             className="schedule-btn glass"

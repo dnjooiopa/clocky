@@ -41,6 +41,8 @@ export default function Clock({
 
   const ticks = Array.from({ length: 12 }, (_, i) => i)
 
+  const nowMinute = now.getHours() * 60 + now.getMinutes()
+
   // Markers sit at their 12-hour analog clock position (12 at the top), the
   // same convention as the hour ticks. Each hour spans 30°. Morning and evening
   // times therefore share a position (e.g. 06:00 and 18:00).
@@ -107,12 +109,13 @@ export default function Clock({
         {activities.map((a) => {
           const { x, y } = markerPos(a.startMinute)
           const active = a.id === activeId
+          const past = !active && a.startMinute < nowMinute
           return (
             <g
               key={a.id}
               className={`activity-marker${active ? ' active' : ''}${
-                onActivityClick ? ' clickable' : ''
-              }`}
+                past ? ' past' : ''
+              }${onActivityClick ? ' clickable' : ''}`}
               onClick={
                 onActivityClick ? () => onActivityClick(a.id) : undefined
               }

@@ -39,8 +39,17 @@
   transition: r 0.2s ease;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
 }
+.activity-marker.past {
+  opacity: 0.4;
+}
+.activity-marker.past .marker-dot {
+  stroke: rgba(255, 255, 255, 0.5);
+}
 .activity-marker.clickable {
   cursor: pointer;
+}
+.activity-marker.past.clickable:hover {
+  opacity: 0.7;
 }
 .activity-marker.clickable:hover .marker-dot {
   r: 5.2;

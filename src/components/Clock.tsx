@@ -1,26 +1,35 @@
-import { dayProgress, minutesToLabel } from '../utils/time'
+import { dayProgress, formatDuration, minutesToLabel } from '../utils/time'
 import type { PeriodInfo } from '../utils/time'
-import type { Activity } from '../types'
+import type { Activity, ClockMode, PomodoroPhase } from '../types'
 import './Clock.css'
+
+interface PomodoroView {
+  phase: PomodoroPhase
+  remaining: number
+  total: number
+  focusCount: number
+}
 
 interface Props {
   now: Date
   period: PeriodInfo
+  /** Which face to show: the daily schedule or the pomodoro timer. */
+  mode: ClockMode
+  /** Toggles between activity and pomodoro mode when the center is clicked. */
+  onToggleMode?: () => void
   /**
    * Angle (in degrees) where the day-progress ring begins, measured clockwise
    * from the 3 o'clock position. Defaults to -90 (the top / 12 o'clock).
    */
   progressStartAngle?: number
-  /** Whether the day-progress percentage is shown in the center. */
-  showPercent?: boolean
-  /** Toggles the percentage visibility when the center is clicked. */
-  onTogglePercent?: () => void
   /** Activities to plot as markers around the ring at their time of day. */
   activities?: Activity[]
   /** Id of the currently active activity (rendered emphasized). */
   activeId?: string | null
   /** Called when an activity marker is clicked. */
   onActivityClick?: (id: string) => void
+  /** Pomodoro state — drives the ring and center readout in pomodoro mode. */
+  pomodoro?: PomodoroView
 }
 
 const R = 92
@@ -29,15 +38,24 @@ const CIRC = 2 * Math.PI * R
 export default function Clock({
   now,
   period,
+  mode,
+  onToggleMode,
   progressStartAngle = -90,
-  showPercent = true,
-  onTogglePercent,
   activities = [],
   activeId,
   onActivityClick,
+  pomodoro,
 }: Props) {
-  const progress = dayProgress(now)
+  const pomo = mode === 'pomodoro' ? pomodoro : undefined
+  const progress = pomo
+    ? (pomo.total - pomo.remaining) / pomo.total
+    : dayProgress(now)
   const dashoffset = CIRC * (1 - progress)
+  const ringStroke = pomo
+    ? pomo.phase === 'focus'
+      ? 'url(#ringFocus)'
+      : 'url(#ringBreak)'
+    : 'url(#ringGrad)'
 
   const ticks = Array.from({ length: 12 }, (_, i) => i)
 
@@ -60,6 +78,14 @@ export default function Clock({
             <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
             <stop offset="100%" stopColor="rgba(255,255,255,0.55)" />
           </linearGradient>
+          <linearGradient id="ringFocus" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#fbbf24" />
+            <stop offset="100%" stopColor="#f97316" />
+          </linearGradient>
+          <linearGradient id="ringBreak" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="100%" stopColor="#10b981" />
+          </linearGradient>
         </defs>
 
         {/* Track + progress ring */}
@@ -76,7 +102,7 @@ export default function Clock({
           r={R}
           className="ring-progress"
           fill="none"
-          stroke="url(#ringGrad)"
+          stroke={ringStroke}
           strokeDasharray={CIRC}
           strokeDashoffset={dashoffset}
           strokeLinecap="round"
@@ -106,7 +132,8 @@ export default function Clock({
         })}
 
         {/* Activity markers, placed around the ring at their time of day */}
-        {activities.map((a) => {
+        {!pomo &&
+          activities.map((a) => {
           const { x, y } = markerPos(a.startMinute)
           const active = a.id === activeId
           const past = !active && a.startMinute < nowMinute
@@ -136,21 +163,32 @@ export default function Clock({
         })}
       </svg>
 
-      {/* Inner readout — click to show/hide the percentage */}
+      {/* Inner readout — click to switch between activity and pomodoro mode */}
       <button
         type="button"
         className="clock-center"
-        onClick={onTogglePercent}
-        aria-pressed={showPercent}
-        title={showPercent ? 'Hide percentage' : 'Show percentage'}
+        onClick={onToggleMode}
+        title={`Switch to ${mode === 'activity' ? 'Pomodoro' : 'Activity'} mode`}
       >
-        <span className="clock-period">{period.label}</span>
-        {showPercent && (
+        {pomo ? (
           <>
+            <span className="clock-period">
+              {pomo.phase === 'focus' ? 'Focus' : 'Break'}
+            </span>
             <span className="clock-progress">
+              {formatDuration(pomo.remaining)}
+            </span>
+            <span className="clock-progress-label">
+              {pomo.focusCount} done
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="clock-period">{period.label}</span>
+            {/* <span className="clock-progress">
               {Math.round(progress * 100)}%
             </span>
-            <span className="clock-progress-label">of 12h</span>
+            <span className="clock-progress-label">of 12h</span> */}
           </>
         )}
       </button>

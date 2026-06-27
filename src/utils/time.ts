@@ -38,11 +38,15 @@ export function greetingForDate(date: Date): string {
   return 'Good Evening'
 }
 
-/** Progress of the day as a fraction 0–1. */
+/**
+ * Progress through the current 12-hour cycle as a fraction 0–1. The ring
+ * completes a full round every 12 hours, matching the 12-hour analog face and
+ * the activity markers, so it wraps twice per day.
+ */
 export function dayProgress(date: Date): number {
   const minutes =
     date.getHours() * 60 + date.getMinutes() + date.getSeconds() / 60
-  return minutes / 1440
+  return (minutes % 720) / 720
 }
 
 export function formatTime(date: Date, withSeconds = false): string {

@@ -147,7 +147,7 @@ export default function Clock({
             <span className="clock-progress">
               {Math.round(progress * 100)}%
             </span>
-            <span className="clock-progress-label">of the day</span>
+            <span className="clock-progress-label">of 12h</span>
           </>
         )}
       </button>

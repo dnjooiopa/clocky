@@ -66,6 +66,13 @@ export function formatDate(date: Date): string {
   })
 }
 
+/** "MM:SS" countdown label from a number of seconds. */
+export function formatDuration(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds))
+  const m = Math.floor(s / 60)
+  return `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+}
+
 /** "06:00" style label from minutes-from-midnight. */
 export function minutesToLabel(minute: number): string {
   const h = Math.floor(minute / 60)

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import type { ClockMode } from '../types'
 import './Background.css'
 
 /** Deterministic pseudo-random so layout is stable between renders. */
@@ -38,9 +39,12 @@ function Particles() {
   )
 }
 
-export default function Background() {
+export default function Background({ mode = 'activity' }: { mode?: ClockMode }) {
   return (
-    <div className="background" aria-hidden="true">
+    <div
+      className={`background${mode === 'pomodoro' ? ' background--pomodoro' : ''}`}
+      aria-hidden="true"
+    >
       <div className="glow glow-a" />
       <div className="glow glow-b" />
       <Particles />

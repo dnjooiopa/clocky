@@ -5,6 +5,11 @@ Built with **React 19**, **TypeScript**, and **Vite**, with a glassmorphism UI o
 a calm, static dark theme. Clicking the center of the clock switches between two
 modes: a daily **Activity** schedule and a **Pomodoro** focus timer.
 
+<div style="display: flex">
+  <img alt="mobile-activity-mode" src="./docs/mobile-activity-mode.png" height="480px" />
+  <img alt="mobile-pomodoro-mode" src="./docs/mobile-pomodoro-mode.png" height="480px" />
+</div>
+
 ## Features
 
 - **Clock dial** with hour ticks and a progress ring. Click the center to toggle

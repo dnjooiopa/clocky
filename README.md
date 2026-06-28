@@ -45,11 +45,22 @@ modes: a daily **Activity** schedule and a **Pomodoro** focus timer.
 ## Getting started
 
 ```bash
-npm install
-npm run dev      # start the dev server
-npm run build    # type-check + production build
-npm run preview  # preview the production build
-npm run lint     # run ESLint
+pnpm install
+pnpm dev      # start the dev server
+pnpm build    # type-check + production build
+pnpm preview  # preview the production build
+pnpm lint     # run ESLint
+```
+
+### Docker
+
+A multi-stage `Dockerfile` builds the static bundle and serves it with nginx on
+port 80.
+
+```bash
+docker build -t clocky .
+docker run -d --name clocky -p 80:80 --restart unless-stopped clocky
+# open http://localhost
 ```
 
 ## Project structure
